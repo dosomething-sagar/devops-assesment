@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/yourusername/your-devops-project.git
+    repoURL: https://github.com/dosomething-sagar/devops-assesment.git
     targetRevision: main
     path: k8s
   destination:

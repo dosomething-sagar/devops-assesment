@@ -3,9 +3,10 @@ pipeline {
 
   environment {
     DOCKER_REGISTRY = 'docker.io'
-    IMAGE_NAME      = 'yourdockerhubusername/devops-demo'
-    IMAGE_TAG       = "${BUILD_NUMBER}"
-    GIT_REPO        = 'https://github.com/yourusername/your-devops-project.git'
+    DOCKERHUB_USERNAME = "${env.DOCKERHUB_USERNAME ?: 'yourdockerhubusername'}"
+    IMAGE_NAME = "${env.DOCKERHUB_USERNAME ? "${env.DOCKERHUB_USERNAME}/devops-demo" : 'yourdockerhubusername/devops-demo'}"
+    IMAGE_TAG = "${BUILD_NUMBER}"
+    GIT_REPO = "${env.GIT_REPO ?: 'https://github.com/dosomething-sagar/devops-assesment.git'}"
     GIT_CREDENTIALS = 'github-creds'
   }
 
@@ -14,6 +15,7 @@ pipeline {
       steps {
         checkout scm
         echo "Building image: ${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "Using repository: ${GIT_REPO}"
       }
     }
 
@@ -85,12 +87,15 @@ pipeline {
           passwordVariable: 'GIT_PASS'
         )]) {
           sh '''
+            set -e
             git config user.email 'jenkins@pipeline.local'
             git config user.name 'Jenkins'
             sed -i "s|image: .*devops-demo.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|" k8s/deployment.yaml
             git add k8s/deployment.yaml
             git commit -m "ci: update image to ${IMAGE_TAG} [skip ci]" || echo 'No changes'
-            git push https://${GIT_USER}:${GIT_PASS}@github.com/yourusername/your-devops-project.git main
+            REPO_URL=$(echo "${GIT_REPO}" | sed -E 's#https://##')
+            git remote set-url origin https://${GIT_USER}:${GIT_PASS}@${REPO_URL}
+            git push origin HEAD:main
           '''
         }
       }
@@ -99,7 +104,7 @@ pipeline {
 
   post {
     success {
-      echo "Pipeline complete. Image ${IMAGE_NAME}:${IMAGE_TAG} deployed via ArgoCD."
+      echo "Pipeline complete. Image ${IMAGE_NAME}:${IMAGE_TAG} is synced to Git and will be deployed via ArgoCD."
     }
     failure {
       echo 'Pipeline failed. Check Trivy scan results in trivy-report.json'
