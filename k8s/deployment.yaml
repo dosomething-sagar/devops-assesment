@@ -22,7 +22,8 @@ spec:
     spec:
       containers:
       - name: app
-        image: yourdockerhubusername/devops-demo:1
+        image: local/devops-demo:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
         env:

@@ -86,14 +86,28 @@ If Trivy finds a **CRITICAL** vulnerability, the build fails and the image is no
 
 ## ArgoCD setup
 
-### Install ArgoCD
+### Bootstrap Minikube + ArgoCD + Jenkins
 
 ```bash
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
-kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 -d
+chmod +x scripts/local-bootstrap.sh
+./scripts/local-bootstrap.sh
+```
+
+The bootstrap script will:
+
+- start Minikube if it is not already running
+- apply the Kubernetes manifests
+- install ArgoCD
+- build a local Jenkins image for Minikube
+- create GitHub credentials for Jenkins if `GITHUB_USER` and `GITHUB_TOKEN` are available
+- create Docker Hub credentials for Jenkins if `DOCKERHUB_USERNAME` and `DOCKERHUB_PASSWORD` are available
+
+### Access the UIs
+
+```bash
+kubectl port-forward svc/jenkins -n jenkins 8080:8080
 kubectl port-forward svc/argocd-server -n argocd 8080:443
+kubectl port-forward svc/devops-demo-service -n production 3000:80
 ```
 
 ### Register the application
@@ -104,20 +118,12 @@ kubectl get application -n argocd
 kubectl get pods -n production -w
 ```
 
-## EKS deployment notes
+## Minikube deployment notes
 
-### Create the cluster
+### Start the cluster
 
 ```bash
-eksctl create cluster \
-  --name devops-demo \
-  --region ap-south-1 \
-  --nodegroup-name workers \
-  --node-type t3.medium \
-  --nodes 2 \
-  --nodes-min 2 \
-  --nodes-max 5 \
-  --managed
+minikube start --driver=docker --cpus=2 --memory=4096 --disk-size=20g
 ```
 
 ### Apply the manifests
@@ -126,6 +132,25 @@ eksctl create cluster \
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/
 ```
+
+### Access the app
+
+```bash
+minikube service devops-demo-service -n production
+```
+
+### Docker Hub / Jenkins credentials
+
+For the Jenkins pipeline to push images to Docker Hub, set these environment variables before running the bootstrap script:
+
+```bash
+export DOCKERHUB_USERNAME=<your-dockerhub-username>
+export DOCKERHUB_PASSWORD=<your-dockerhub-password>
+export GITHUB_USER=<your-github-username>
+export GITHUB_TOKEN=<your-github-pat>
+```
+
+Without Docker Hub credentials, the Jenkins image push stage will remain blocked until you provide them.
 
 ## Failure debugging demo
 
