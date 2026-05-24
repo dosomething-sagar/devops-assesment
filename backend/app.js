@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Hello from DevSecOps pipeline!',
     version: process.env.APP_VERSION || 'dev',
-    pipeline: 'GitHub Actions → Jenkins → Trivy → Docker Hub → ArgoCD → EKS'
+    pipeline: 'GitHub Actions → Jenkins → Trivy → Docker Hub → ArgoCD → EKSS'
   });
 });
 
