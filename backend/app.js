@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const app = express();
 app.use(express.json());
 
+// Local Minikube deployments rely on the in-cluster Mongo service DNS name.
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:27017/devopsdb';
 
 mongoose.connect(MONGO_URI).then(() => {
