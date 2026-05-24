@@ -1,0 +1,2 @@
+# .trivyignore — place in repo root
+CVE-2023-XXXXX   # example: vuln in a dev-only dep, not in production build

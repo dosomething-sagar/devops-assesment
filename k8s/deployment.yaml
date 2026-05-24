@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-demo
+  namespace: production
+  labels:
+    app: devops-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devops-demo
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: devops-demo
+    spec:
+      containers:
+      - name: app
+        image: yourdockerhubusername/devops-demo:1
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGO_URI
+          value: 'mongodb://mongo:27017/devopsdb'
+        - name: APP_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: '128Mi'
+            cpu: '100m'
+          limits:
+            memory: '256Mi'
+            cpu: '500m'
